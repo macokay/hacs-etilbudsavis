@@ -3,10 +3,10 @@
   "name": "eTilbudsavis",
   "version": "1.0.0",
   "config_flow": true,
-  "documentation": "https://github.com/yourusername/hacs-etilbudsavis",
-  "issue_tracker": "https://github.com/yourusername/hacs-etilbudsavis/issues",
+  "documentation": "https://github.com/macokay/hacs-etilbudsavis",
+  "issue_tracker": "https://github.com/macokay/hacs-etilbudsavis/issues",
   "dependencies": [],
-  "codeowners": ["@yourusername"],
+  "codeowners": ["@macokay"],
   "requirements": [],
   "iot_class": "cloud_polling"
 }
