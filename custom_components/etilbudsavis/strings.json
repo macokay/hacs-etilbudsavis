@@ -1,0 +1,44 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "eTilbudsavis – Søgevarer",
+        "description": "Indtast kommaseparerede søgetermer, fx: {example}",
+        "data": {
+          "search_terms": "Søgevarer (kommasepareret)"
+        }
+      },
+      "options": {
+        "title": "eTilbudsavis – Indstillinger",
+        "data": {
+          "stores": "Butikker (kommasepareret, tom = alle)",
+          "radius": "Søgeradius i meter",
+          "cans_only": "Kun dåser",
+          "price_per_liter": "Beregn pris pr. liter",
+          "max_offers": "Maks. antal tilbud pr. vare"
+        }
+      }
+    },
+    "error": {
+      "no_terms": "Angiv mindst én søgeterm."
+    },
+    "abort": {
+      "already_configured": "eTilbudsavis er allerede konfigureret."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "eTilbudsavis – Rediger indstillinger",
+        "data": {
+          "search_terms": "Søgevarer (kommasepareret)",
+          "stores": "Butikker (kommasepareret, tom = alle)",
+          "radius": "Søgeradius i meter",
+          "cans_only": "Kun dåser",
+          "price_per_liter": "Beregn pris pr. liter",
+          "max_offers": "Maks. antal tilbud pr. vare"
+        }
+      }
+    }
+  }
+}

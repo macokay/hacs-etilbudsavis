@@ -1,0 +1,44 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "eTilbudsavis – Search items",
+        "description": "Enter comma-separated search terms, e.g.: {example}",
+        "data": {
+          "search_terms": "Search terms (comma-separated)"
+        }
+      },
+      "options": {
+        "title": "eTilbudsavis – Settings",
+        "data": {
+          "stores": "Stores (comma-separated, empty = all)",
+          "radius": "Search radius in meters",
+          "cans_only": "Cans only",
+          "price_per_liter": "Calculate price per liter",
+          "max_offers": "Max offers per item"
+        }
+      }
+    },
+    "error": {
+      "no_terms": "Please enter at least one search term."
+    },
+    "abort": {
+      "already_configured": "eTilbudsavis is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "eTilbudsavis – Edit settings",
+        "data": {
+          "search_terms": "Search terms (comma-separated)",
+          "stores": "Stores (comma-separated, empty = all)",
+          "radius": "Search radius in meters",
+          "cans_only": "Cans only",
+          "price_per_liter": "Calculate price per liter",
+          "max_offers": "Max offers per item"
+        }
+      }
+    }
+  }
+}
