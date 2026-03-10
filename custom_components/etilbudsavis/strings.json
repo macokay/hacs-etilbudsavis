@@ -2,41 +2,41 @@
   "config": {
     "step": {
       "user": {
-        "title": "eTilbudsavis – Søgevarer",
-        "description": "Indtast kommaseparerede søgetermer, fx: {example}",
+        "title": "eTilbudsavis – Search items",
+        "description": "Enter comma-separated search terms, e.g.: {example}",
         "data": {
-          "search_terms": "Søgevarer (kommasepareret)"
+          "search_terms": "Search terms (comma-separated)"
         }
       },
       "options": {
-        "title": "eTilbudsavis – Indstillinger",
+        "title": "eTilbudsavis – Settings",
         "data": {
-          "stores": "Butikker (kommasepareret, tom = alle)",
-          "radius": "Søgeradius i meter",
-          "cans_only": "Kun dåser",
-          "price_per_liter": "Beregn pris pr. liter",
-          "max_offers": "Maks. antal tilbud pr. vare"
+          "stores": "Stores (comma-separated, empty = all)",
+          "radius": "Search radius in meters",
+          "cans_only": "Cans only",
+          "price_per_liter": "Calculate price per liter",
+          "max_offers": "Max offers per item"
         }
       }
     },
     "error": {
-      "no_terms": "Angiv mindst én søgeterm."
+      "no_terms": "Please enter at least one search term."
     },
     "abort": {
-      "already_configured": "eTilbudsavis er allerede konfigureret."
+      "already_configured": "eTilbudsavis is already configured."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "eTilbudsavis – Rediger indstillinger",
+        "title": "eTilbudsavis – Edit settings",
         "data": {
-          "search_terms": "Søgevarer (kommasepareret)",
-          "stores": "Butikker (kommasepareret, tom = alle)",
-          "radius": "Søgeradius i meter",
-          "cans_only": "Kun dåser",
-          "price_per_liter": "Beregn pris pr. liter",
-          "max_offers": "Maks. antal tilbud pr. vare"
+          "search_terms": "Search terms (comma-separated)",
+          "stores": "Stores (comma-separated, empty = all)",
+          "radius": "Search radius in meters",
+          "cans_only": "Cans only",
+          "price_per_liter": "Calculate price per liter",
+          "max_offers": "Max offers per item"
         }
       }
     }

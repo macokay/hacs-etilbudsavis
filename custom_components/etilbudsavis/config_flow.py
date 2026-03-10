@@ -30,35 +30,6 @@ def _terms_schema(defaults: dict) -> vol.Schema:
     )
 
 
-def _options_schema(defaults: dict) -> vol.Schema:
-    return vol.Schema(
-        {
-            vol.Optional(
-                CONF_STORES,
-                default=defaults.get(CONF_STORES, ALL_STORES),
-            ): vol.All(
-                vol.In(ALL_STORES),
-            ),
-            vol.Optional(
-                CONF_RADIUS,
-                default=defaults.get(CONF_RADIUS, DEFAULT_RADIUS),
-            ): vol.All(int, vol.Range(min=1000, max=100000)),
-            vol.Optional(
-                CONF_CANS_ONLY,
-                default=defaults.get(CONF_CANS_ONLY, False),
-            ): bool,
-            vol.Optional(
-                CONF_PRICE_PER_LITER,
-                default=defaults.get(CONF_PRICE_PER_LITER, False),
-            ): bool,
-            vol.Optional(
-                CONF_MAX_OFFERS,
-                default=defaults.get(CONF_MAX_OFFERS, 5),
-            ): vol.All(int, vol.Range(min=1, max=20)),
-        }
-    )
-
-
 def _parse_terms(raw: str) -> list[str]:
     """Parse comma-separated search terms."""
     return [t.strip() for t in raw.split(",") if t.strip()]

@@ -126,3 +126,12 @@ action:
 ## Credits
 
 Based on the unofficial `api.etilbudsavis.dk/v2` API.
+
+---
+
+## License
+
+© 2026 Mac O Kay
+Free to use and modify for personal, non-commercial use.
+Credit appreciated if you share or build upon this work.
+Commercial use is not permitted.
