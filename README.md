@@ -14,6 +14,7 @@ Creates one sensor per search term showing the number of active offers nearby, w
 - Filter by specific stores
 - Optional: filter for canned drinks only
 - Optional: calculate price per liter (great for beverages)
+- Optional: calculate price per kg (great for food items)
 - Uses your Home Assistant home location automatically
 - Configurable search radius
 - All settings editable after setup via the Options flow
@@ -47,9 +48,10 @@ pepsi max, faxe kondi, tuborg classic
 | Radius | Search radius in meters from your home location | 25000 |
 | Cans only | Only include offers where "dåse/can" appears in the offer text | Off |
 | Price per liter | Calculate and expose price per liter where quantity data is available | Off |
+| Price per kg | Calculate and expose price per kg where weight data is available | Off |
 | Max offers per item | Maximum number of offers to return per search term | 5 |
 
-**Supported stores (Danish):** Bilka, Coop 365, fakta, Føtex, Kvickly, Lidl, Meny, Netto, Rema 1000, Spar, SuperBrugsen
+**Supported stores (Danish):** Bilka, Coop 365, Fakta, Føtex, Kvickly, Lidl, Meny, Netto, Rema1000, Spar, SuperBrugsen
 
 ---
 
@@ -65,7 +67,7 @@ Each search term creates a sensor:
 |---|---|
 | `search_term` | The search term used |
 | `offers` | List of all offers found (store, heading, price, dates, etc.) |
-| `best_offer` | The offer with the lowest price (or price/liter if enabled) |
+| `best_offer` | The offer with the lowest price (or price/liter or price/kg if enabled) |
 
 ### Example: offers attribute
 ```json

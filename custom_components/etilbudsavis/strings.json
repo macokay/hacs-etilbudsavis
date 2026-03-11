@@ -15,6 +15,7 @@
           "radius": "Search radius in meters",
           "cans_only": "Cans only",
           "price_per_liter": "Calculate price per liter",
+          "price_per_kg": "Calculate price per kg",
           "max_offers": "Max offers per item"
         }
       }
@@ -36,6 +37,7 @@
           "radius": "Search radius in meters",
           "cans_only": "Cans only",
           "price_per_liter": "Calculate price per liter",
+          "price_per_kg": "Calculate price per kg",
           "max_offers": "Max offers per item"
         }
       }

@@ -16,18 +16,19 @@ CONF_RADIUS = "radius"
 CONF_STORES = "stores"
 CONF_CANS_ONLY = "cans_only"
 CONF_PRICE_PER_LITER = "price_per_liter"
+CONF_PRICE_PER_KG = "price_per_kg"
 CONF_MAX_OFFERS = "max_offers"
 
 ALL_STORES = [
     "Bilka",
     "Coop 365",
-    "fakta",
+    "Fakta",
     "Føtex",
     "Kvickly",
     "Lidl",
     "Meny",
     "Netto",
-    "Rema 1000",
+    "Rema1000",
     "Spar",
     "SuperBrugsen",
 ]

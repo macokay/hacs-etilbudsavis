@@ -17,6 +17,7 @@ from .const import (
     API_LOCALE,
     CONF_CANS_ONLY,
     CONF_MAX_OFFERS,
+    CONF_PRICE_PER_KG,
     CONF_PRICE_PER_LITER,
     CONF_RADIUS,
     CONF_SEARCH_TERMS,
@@ -31,6 +32,7 @@ _LOGGER = logging.getLogger(__name__)
 
 CAN_KEYWORDS = ["dåse", "dåser", "can", "cans"]
 UNIT_TO_LITER = {"cl": 0.01, "ml": 0.001, "l": 1.0, "dl": 0.1}
+UNIT_TO_KG = {"g": 0.001, "kg": 1.0, "hg": 0.1}
 
 
 def _extract_liter(offer: dict) -> float | None:
@@ -47,7 +49,21 @@ def _extract_liter(offer: dict) -> float | None:
     return None
 
 
-def _parse_offers(raw: list, stores: list, cans_only: bool, price_per_liter: bool, max_offers: int) -> list:
+def _extract_kg(offer: dict) -> float | None:
+    """Try to extract total kilograms from quantity fields."""
+    q = offer.get("quantity", {})
+    if not q:
+        return None
+    size = (q.get("size") or {}).get("from", 0)
+    pieces = (q.get("pieces") or {}).get("from", 1)
+    unit = ((q.get("unit") or {}).get("symbol") or "").lower()
+    factor = UNIT_TO_KG.get(unit)
+    if factor and size and pieces:
+        return size * pieces * factor
+    return None
+
+
+def _parse_offers(raw: list, stores: list, cans_only: bool, price_per_liter: bool, price_per_kg: bool, max_offers: int) -> list:
     """Filter and format offers from API response."""
     stores_lower = [s.lower() for s in stores] if stores else []
     results = []
@@ -91,6 +107,12 @@ def _parse_offers(raw: list, stores: list, cans_only: bool, price_per_liter: boo
                 entry["price_per_liter"] = round(float(price) / liters, 2)
                 entry["total_liters"] = round(liters, 2)
 
+        if price_per_kg:
+            kg = _extract_kg(offer)
+            if kg and kg > 0:
+                entry["price_per_kg"] = round(float(price) / kg, 2)
+                entry["total_kg"] = round(kg, 2)
+
         results.append(entry)
 
     return results
@@ -111,6 +133,7 @@ class EtilbudsavisCoordinator(DataUpdateCoordinator):
         self.stores: list[str] = options.get(CONF_STORES, [])
         self.cans_only: bool = options.get(CONF_CANS_ONLY, False)
         self.price_per_liter: bool = options.get(CONF_PRICE_PER_LITER, False)
+        self.price_per_kg: bool = options.get(CONF_PRICE_PER_KG, False)
         self.max_offers: int = options.get(CONF_MAX_OFFERS, 5)
         self._lat = lat
         self._lon = lon
@@ -142,6 +165,7 @@ class EtilbudsavisCoordinator(DataUpdateCoordinator):
                     self.stores,
                     self.cans_only,
                     self.price_per_liter,
+                    self.price_per_kg,
                     self.max_offers,
                 )
         return results

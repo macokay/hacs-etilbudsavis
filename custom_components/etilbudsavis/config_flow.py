@@ -10,6 +10,7 @@ from .const import (
     ALL_STORES,
     CONF_CANS_ONLY,
     CONF_MAX_OFFERS,
+    CONF_PRICE_PER_KG,
     CONF_PRICE_PER_LITER,
     CONF_RADIUS,
     CONF_SEARCH_TERMS,
@@ -79,6 +80,7 @@ class EtilbudsavisConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_RADIUS: user_input[CONF_RADIUS],
                     CONF_CANS_ONLY: user_input[CONF_CANS_ONLY],
                     CONF_PRICE_PER_LITER: user_input[CONF_PRICE_PER_LITER],
+                    CONF_PRICE_PER_KG: user_input[CONF_PRICE_PER_KG],
                     CONF_MAX_OFFERS: user_input[CONF_MAX_OFFERS],
                 }
             )
@@ -94,6 +96,7 @@ class EtilbudsavisConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional(CONF_RADIUS, default=DEFAULT_RADIUS): int,
                 vol.Optional(CONF_CANS_ONLY, default=False): bool,
                 vol.Optional(CONF_PRICE_PER_LITER, default=False): bool,
+                vol.Optional(CONF_PRICE_PER_KG, default=False): bool,
                 vol.Optional(CONF_MAX_OFFERS, default=5): int,
             }
         )
@@ -139,6 +142,7 @@ class EtilbudsavisOptionsFlow(config_entries.OptionsFlow):
                         CONF_RADIUS: user_input[CONF_RADIUS],
                         CONF_CANS_ONLY: user_input[CONF_CANS_ONLY],
                         CONF_PRICE_PER_LITER: user_input[CONF_PRICE_PER_LITER],
+                        CONF_PRICE_PER_KG: user_input[CONF_PRICE_PER_KG],
                         CONF_MAX_OFFERS: user_input[CONF_MAX_OFFERS],
                     },
                 )
@@ -153,6 +157,7 @@ class EtilbudsavisOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(CONF_RADIUS, default=existing.get(CONF_RADIUS, DEFAULT_RADIUS)): int,
                 vol.Optional(CONF_CANS_ONLY, default=existing.get(CONF_CANS_ONLY, False)): bool,
                 vol.Optional(CONF_PRICE_PER_LITER, default=existing.get(CONF_PRICE_PER_LITER, False)): bool,
+                vol.Optional(CONF_PRICE_PER_KG, default=existing.get(CONF_PRICE_PER_KG, False)): bool,
                 vol.Optional(CONF_MAX_OFFERS, default=existing.get(CONF_MAX_OFFERS, 5)): int,
             }
         )

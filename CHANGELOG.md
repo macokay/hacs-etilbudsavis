@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.0] - 2026-03-11
+
+### Added
+- Price per kg option (similar to price per liter, for food items)
+
+### Changed
+- Fixed store name casing: `fakta` → `Fakta`, `Rema 1000` → `Rema1000`
+
 ## [1.0.1] - 2026-03-10
 
 ### Changed

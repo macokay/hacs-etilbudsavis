@@ -61,8 +61,9 @@ class EtilbudsavisSensor(CoordinatorEntity, SensorEntity):
             best = None
             for o in offers:
                 ppl = o.get("price_per_liter")
+                ppk = o.get("price_per_kg")
                 price = o.get("price")
-                val = ppl if ppl is not None else price
+                val = ppl if ppl is not None else (ppk if ppk is not None else price)
                 if val is not None and (best is None or val < best["_val"]):
                     best = {**o, "_val": val}
             if best:
