@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1] - 2026-04-09
+
+### Changed
+- README restructured to standard template format — logo, badges, Buy Me A Coffee, structured sections
+- Issue templates updated to standard format — added Actual behaviour section and log filter instructions
+- `.gitignore` removed (managed by global gitignore)
+- Bumped version to force HACS translation cache refresh
+
 ## [1.1.0] - 2026-03-11
 
 ### Added

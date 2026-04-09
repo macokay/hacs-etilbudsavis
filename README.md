@@ -1,10 +1,30 @@
-# eTilbudsavis for Home Assistant
+<p align="center">
+  <img src="custom_components/etilbudsavis/brand/icon.png" alt="eTilbudsavis" width="120" />
+</p>
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
+<h1 align="center">eTilbudsavis</h1>
 
-Home Assistant integration that fetches weekly offers from [eTilbudsavis.dk](https://etilbudsavis.dk) for items you care about.
+<p align="center">
+  Track weekly offers from eTilbudsavis.dk for products you care about — one sensor per search term, updated every 6 hours.
+</p>
 
-Creates one sensor per search term showing the number of active offers nearby, with full offer details (store, price, dates) as attributes.
+<p align="center">
+  <a href="https://github.com/hacs/integration">
+    <img src="https://img.shields.io/badge/HACS-Custom-orange.svg" alt="HACS Custom" />
+  </a>
+  <a href="https://github.com/macokay/hacs-etilbudsavis/releases">
+    <img src="https://img.shields.io/github/v/release/macokay/hacs-etilbudsavis" alt="GitHub release" />
+  </a>
+  <a href="https://github.com/macokay/hacs-etilbudsavis/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/License-Non--Commercial-blue.svg" alt="License" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://www.buymeacoffee.com/macokay">
+    <img src="https://img.shields.io/badge/Buy%20Me%20A%20Coffee-%23FFDD00.svg?logo=buy-me-a-coffee&logoColor=black" alt="Buy Me A Coffee" />
+  </a>
+</p>
 
 ---
 
@@ -21,26 +41,44 @@ Creates one sensor per search term showing the number of active offers nearby, w
 
 ---
 
-## Installation via HACS
+## Requirements
 
-1. Open HACS in Home Assistant
-2. Go to **Integrations** → three-dot menu → **Custom repositories**
-3. Add `https://github.com/macokay/hacs-etilbudsavis` as type **Integration**
-4. Search for **eTilbudsavis** and install
-5. Restart Home Assistant
-6. Go to **Settings → Devices & Services → Add Integration** → search for **eTilbudsavis**
+| Requirement | Version / Details |
+|---|---|
+| Home Assistant | 2023.1 or newer |
+| eTilbudsavis.dk | No API key required — uses unofficial public API |
+
+---
+
+## Installation
+
+### Automatic — via HACS
+
+1. Open **HACS** in Home Assistant.
+2. Go to **Integrations** → three-dot menu (⋮) → **Custom repositories**.
+3. Add `https://github.com/macokay/hacs-etilbudsavis` as **Integration**.
+4. Search for **eTilbudsavis** and click **Download**.
+5. Restart Home Assistant.
+
+### Manual
+
+1. Download the latest release from [GitHub Releases](https://github.com/macokay/hacs-etilbudsavis/releases).
+2. Copy the `custom_components/etilbudsavis` folder to your `config/custom_components/` directory.
+3. Restart Home Assistant.
 
 ---
 
 ## Configuration
 
-### Step 1 – Search terms
-Enter comma-separated product names:
-```
-pepsi max, faxe kondi, tuborg classic
-```
+1. Go to **Settings → Devices & Services → Add Integration**.
+2. Search for **eTilbudsavis**.
+3. Enter the required fields:
 
-### Step 2 – Options
+| Field | Description |
+|---|---|
+| Search terms | Comma-separated product names (e.g. `pepsi max, faxe kondi, tuborg classic`) |
+
+Post-setup options are available via **Configure** on the integration card:
 
 | Option | Description | Default |
 |---|---|---|
@@ -51,15 +89,17 @@ pepsi max, faxe kondi, tuborg classic
 | Price per kg | Calculate and expose price per kg where weight data is available | Off |
 | Max offers per item | Maximum number of offers to return per search term | 5 |
 
-**Supported stores (Danish):** Bilka, Coop 365, Fakta, Føtex, Kvickly, Lidl, Meny, Netto, Rema1000, Spar, SuperBrugsen
+**Supported stores:** Bilka, Coop 365, Fakta, Føtex, Kvickly, Lidl, Meny, Netto, Rema1000, Spar, SuperBrugsen
 
 ---
 
-## Sensors
+## Data
 
-Each search term creates a sensor:
-- **State:** number of active offers found
-- **Unit:** `tilbud`
+### Entities
+
+| Entity | Type | Description |
+|---|---|---|
+| `sensor.tilbud_{search_term}` | `int` | Number of active offers found for the search term |
 
 ### Attributes
 
@@ -69,7 +109,8 @@ Each search term creates a sensor:
 | `offers` | List of all offers found (store, heading, price, dates, etc.) |
 | `best_offer` | The offer with the lowest price (or price/liter or price/kg if enabled) |
 
-### Example: offers attribute
+**Example `offers` attribute:**
+
 ```json
 [
   {
@@ -84,56 +125,34 @@ Each search term creates a sensor:
 ]
 ```
 
----
+### Update interval
 
-## Example automation
-
-```yaml
-alias: "Husholdning - Tilbudsavis - Notifikation ved nye tilbud"
-description: "Notifikation mandag morgen ved aktive tilbud"
-trigger:
-  - platform: time
-    at: "08:00:00"
-condition:
-  - condition: time
-    weekday: [mon]
-  - condition: template
-    value_template: >
-      {{ states('sensor.tilbud_pepsi_max') | int(0) > 0
-         or states('sensor.tilbud_faxe_kondi_lemonade') | int(0) > 0 }}
-variables:
-  best_pepsi: "{{ state_attr('sensor.tilbud_pepsi_max', 'best_offer') }}"
-  best_faxe: "{{ state_attr('sensor.tilbud_faxe_kondi_lemonade', 'best_offer') }}"
-action:
-  - service: notify.mobile_app_your_phone
-    data:
-      title: "Tilbud denne uge 🛒"
-      message: >
-        {% if best_pepsi %}🥤 Pepsi Max: {{ best_pepsi.store }} {{ best_pepsi.price_per_liter }} kr/l{% endif %}
-        {% if best_faxe %}
-        🍋 Faxe Kondi: {{ best_faxe.store }} {{ best_faxe.price_per_liter }} kr/l{% endif %}
-```
+Data is fetched every 6 hours.
 
 ---
 
-## Notes
+## Updating
 
-- Data updates every 6 hours
+**Via HACS:** HACS will notify you when an update is available. Click **Update** on the integration card.
+
+**Manual:** Replace the `custom_components/etilbudsavis` folder with the new version and restart Home Assistant.
+
+---
+
+## Known Limitations
+
 - The eTilbudsavis API is unofficial and undocumented — it may change without notice
-- Location is taken from Home Assistant's configured home location
-- Offers are only shown if they are currently active in your area
+- Price per liter and price per kg require quantity data in the offer text — not always available
+- Offers are only shown if currently active in your configured search area
 
 ---
 
 ## Credits
 
-Based on the unofficial `api.etilbudsavis.dk/v2` API.
+- [eTilbudsavis.dk](https://etilbudsavis.dk) — Danish offer aggregator (unofficial API)
 
 ---
 
 ## License
 
-© 2026 Mac O Kay
-Free to use and modify for personal, non-commercial use.
-Credit appreciated if you share or build upon this work.
-Commercial use is not permitted.
+&copy; 2026 Mac O Kay. Free to use and modify for personal, non-commercial use. Attribution appreciated if you share or build upon this work. Commercial use is not permitted.
