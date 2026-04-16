@@ -1,6 +1,5 @@
 {
   "name": "eTilbudsavis",
   "render_readme": true,
-  "homeassistant": "2023.1.0",
-  "icon": "https://raw.githubusercontent.com/macokay/hacs-etilbudsavis/main/icon.png"
+  "homeassistant": "2023.1.0"
 }
