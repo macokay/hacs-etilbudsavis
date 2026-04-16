@@ -1,7 +1,9 @@
 {
   "domain": "etilbudsavis",
   "name": "eTilbudsavis",
-  "codeowners": ["@macokay"],
+  "codeowners": [
+    "@macokay"
+  ],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/macokay/hacs-etilbudsavis",
