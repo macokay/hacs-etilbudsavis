@@ -1,4 +1,5 @@
 """Sensor platform for eTilbudsavis."""
+
 from __future__ import annotations
 
 import logging
@@ -23,8 +24,7 @@ async def async_setup_entry(
     """Set up eTilbudsavis sensors."""
     coordinator: EtilbudsavisCoordinator = hass.data[DOMAIN][entry.entry_id]
     entities = [
-        EtilbudsavisSensor(coordinator, term)
-        for term in coordinator.search_terms
+        EtilbudsavisSensor(coordinator, term) for term in coordinator.search_terms
     ]
     async_add_entities(entities)
 

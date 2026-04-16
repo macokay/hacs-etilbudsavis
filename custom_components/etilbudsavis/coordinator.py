@@ -1,4 +1,5 @@
 """DataUpdateCoordinator for eTilbudsavis."""
+
 from __future__ import annotations
 
 import asyncio
@@ -63,7 +64,14 @@ def _extract_kg(offer: dict) -> float | None:
     return None
 
 
-def _parse_offers(raw: list, stores: list, cans_only: bool, price_per_liter: bool, price_per_kg: bool, max_offers: int) -> list:
+def _parse_offers(
+    raw: list,
+    stores: list,
+    cans_only: bool,
+    price_per_liter: bool,
+    price_per_kg: bool,
+    max_offers: int,
+) -> list:
     """Filter and format offers from API response."""
     stores_lower = [s.lower() for s in stores] if stores else []
     results = []
@@ -149,10 +157,7 @@ class EtilbudsavisCoordinator(DataUpdateCoordinator):
         """Fetch data for all search terms."""
         results = {}
         async with aiohttp.ClientSession() as session:
-            tasks = [
-                self._fetch_term(session, term)
-                for term in self.search_terms
-            ]
+            tasks = [self._fetch_term(session, term) for term in self.search_terms]
             fetched = await asyncio.gather(*tasks, return_exceptions=True)
 
         for term, data in zip(self.search_terms, fetched):
@@ -183,7 +188,9 @@ class EtilbudsavisCoordinator(DataUpdateCoordinator):
             "limit": DEFAULT_LIMIT,
         }
         try:
-            async with session.get(API_BASE, params=params, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+            async with session.get(
+                API_BASE, params=params, timeout=aiohttp.ClientTimeout(total=15)
+            ) as resp:
                 if resp.status != 200:
                     raise UpdateFailed(f"API returned {resp.status}")
                 return await resp.json()

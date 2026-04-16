@@ -1,4 +1,5 @@
 """Config flow for eTilbudsavis."""
+
 from __future__ import annotations
 
 import voluptuous as vol
@@ -154,11 +155,22 @@ class EtilbudsavisOptionsFlow(config_entries.OptionsFlow):
             {
                 vol.Required(CONF_SEARCH_TERMS, default=terms_default): str,
                 vol.Optional(CONF_STORES, default=stores_default): str,
-                vol.Optional(CONF_RADIUS, default=existing.get(CONF_RADIUS, DEFAULT_RADIUS)): int,
-                vol.Optional(CONF_CANS_ONLY, default=existing.get(CONF_CANS_ONLY, False)): bool,
-                vol.Optional(CONF_PRICE_PER_LITER, default=existing.get(CONF_PRICE_PER_LITER, False)): bool,
-                vol.Optional(CONF_PRICE_PER_KG, default=existing.get(CONF_PRICE_PER_KG, False)): bool,
-                vol.Optional(CONF_MAX_OFFERS, default=existing.get(CONF_MAX_OFFERS, 5)): int,
+                vol.Optional(
+                    CONF_RADIUS, default=existing.get(CONF_RADIUS, DEFAULT_RADIUS)
+                ): int,
+                vol.Optional(
+                    CONF_CANS_ONLY, default=existing.get(CONF_CANS_ONLY, False)
+                ): bool,
+                vol.Optional(
+                    CONF_PRICE_PER_LITER,
+                    default=existing.get(CONF_PRICE_PER_LITER, False),
+                ): bool,
+                vol.Optional(
+                    CONF_PRICE_PER_KG, default=existing.get(CONF_PRICE_PER_KG, False)
+                ): bool,
+                vol.Optional(
+                    CONF_MAX_OFFERS, default=existing.get(CONF_MAX_OFFERS, 5)
+                ): int,
             }
         )
 
