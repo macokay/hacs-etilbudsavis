@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.7] - 2026-09-29
+
+### Fixed
+- Store filter now matches store names regardless of case, spaces and punctuation. `Rema1000` matches the API's `REMA 1000`, which previously returned 0 offers ([#7](https://github.com/macokay/hacs-etilbudsavis/issues/7))
+- `Coop 365` now matches the API's `365discount`, which previously returned 0 offers
+- Fetch up to 100 offers per search term (was 24) before filtering by store, so stores further down the result list are no longer cut off
+
 ## [1.1.1] - 2026-04-09
 
 ### Changed

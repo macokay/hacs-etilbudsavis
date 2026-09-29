@@ -9,7 +9,7 @@ API_AV = "0.3.0"
 
 DEFAULT_RADIUS = 25000
 DEFAULT_SCAN_INTERVAL = 21600  # 6 hours
-DEFAULT_LIMIT = 24
+DEFAULT_LIMIT = 100
 
 CONF_SEARCH_TERMS = "search_terms"
 CONF_RADIUS = "radius"
@@ -32,3 +32,8 @@ ALL_STORES = [
     "Spar",
     "SuperBrugsen",
 ]
+
+# Store names as users type them, mapped to the API's branding name
+STORE_ALIASES = {
+    "coop365": "365discount",
+}

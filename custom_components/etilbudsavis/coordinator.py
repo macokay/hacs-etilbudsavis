@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from datetime import timedelta
 
 import aiohttp
@@ -26,6 +27,7 @@ from .const import (
     DEFAULT_RADIUS,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    STORE_ALIASES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -33,6 +35,12 @@ _LOGGER = logging.getLogger(__name__)
 CAN_KEYWORDS = ["dåse", "dåser", "can", "cans"]
 UNIT_TO_LITER = {"cl": 0.01, "ml": 0.001, "l": 1.0, "dl": 0.1}
 UNIT_TO_KG = {"g": 0.001, "kg": 1.0, "hg": 0.1}
+
+
+def _normalize_store(name: str) -> str:
+    """Normalize a store name so "Rema1000" matches the API's "REMA 1000"."""
+    key = re.sub(r"[^0-9a-zæøå]", "", name.lower())
+    return STORE_ALIASES.get(key, key)
 
 
 def _extract_liter(offer: dict) -> float | None:
@@ -72,7 +80,7 @@ def _parse_offers(
     max_offers: int,
 ) -> list:
     """Filter and format offers from API response."""
-    stores_lower = [s.lower() for s in stores] if stores else []
+    stores_norm = {_normalize_store(s) for s in stores} if stores else set()
     results = []
 
     for offer in raw:
@@ -82,7 +90,7 @@ def _parse_offers(
         branding = offer.get("branding") or {}
         store_name = branding.get("name", "")
 
-        if stores_lower and store_name.lower() not in stores_lower:
+        if stores_norm and _normalize_store(store_name) not in stores_norm:
             continue
 
         if cans_only:
