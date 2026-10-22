@@ -21,6 +21,9 @@ CONF_PRICE_PER_LITER = "price_per_liter"
 CONF_PRICE_PER_KG = "price_per_kg"
 CONF_MAX_OFFERS = "max_offers"
 CONF_CATALOGS = "catalogs"
+CONF_FEATURES = "features"
+FEATURE_SEARCH = "search"
+FEATURE_CATALOGS = "catalogs"
 
 ALL_STORES = [
     "Bilka",

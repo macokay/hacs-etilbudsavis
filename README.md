@@ -73,11 +73,13 @@
 
 1. Go to **Settings → Devices & Services → Add Integration**.
 2. Search for **eTilbudsavis**.
-3. Enter the required fields:
+3. Choose what to follow: **Search for items**, **Store catalogs**, or both.
+4. Enter the search terms and/or the stores whose catalogs you want to follow:
 
 | Field | Description |
 |---|---|
 | Search terms | Comma-separated product names (e.g. `pepsi max, faxe kondi, tuborg classic`) |
+| Stores for catalogs | Comma-separated stores (e.g. `Netto, Rema1000, Lidl`). Any store on eTilbudsavis.dk works |
 
 Post-setup options are available via **Configure** on the integration card:
 

@@ -2,10 +2,24 @@
   "config": {
     "step": {
       "user": {
+        "title": "eTilbudsavis – What to follow",
+        "description": "Pick one or both. You can change this later.",
+        "data": {
+          "features": "Follow"
+        }
+      },
+      "search": {
         "title": "eTilbudsavis – Search items",
         "description": "Enter comma-separated search terms, e.g.: {example}",
         "data": {
           "search_terms": "Search terms (comma-separated)"
+        }
+      },
+      "catalogs": {
+        "title": "eTilbudsavis – Catalogs",
+        "description": "Enter the stores whose catalogs you want to follow, e.g.: Netto, Rema1000, Lidl",
+        "data": {
+          "catalogs": "Stores (comma-separated)"
         }
       },
       "options": {
@@ -16,13 +30,14 @@
           "cans_only": "Cans only",
           "price_per_liter": "Calculate price per liter",
           "price_per_kg": "Calculate price per kg",
-          "max_offers": "Max offers per item",
-          "catalogs": "Watch catalogs from stores (comma-separated, empty = none)"
+          "max_offers": "Max offers per item"
         }
       }
     },
     "error": {
-      "no_terms": "Please enter at least one search term."
+      "no_feature": "Pick at least one: search or catalogs.",
+      "no_terms": "Please enter at least one search term.",
+      "no_stores": "Please enter at least one store."
     },
     "abort": {
       "already_configured": "eTilbudsavis is already configured."
@@ -33,15 +48,26 @@
       "init": {
         "title": "eTilbudsavis – Edit settings",
         "data": {
-          "search_terms": "Search terms (comma-separated)",
+          "search_terms": "Search terms (comma-separated, empty = none)",
+          "catalogs": "Catalogs from stores (comma-separated, empty = none)",
           "stores": "Stores (comma-separated, empty = all)",
           "radius": "Search radius in meters",
           "cans_only": "Cans only",
           "price_per_liter": "Calculate price per liter",
           "price_per_kg": "Calculate price per kg",
-          "max_offers": "Max offers per item",
-          "catalogs": "Watch catalogs from stores (comma-separated, empty = none)"
+          "max_offers": "Max offers per item"
         }
+      }
+    },
+    "error": {
+      "no_feature": "Enter at least one search term or store."
+    }
+  },
+  "selector": {
+    "features": {
+      "options": {
+        "search": "Search for items",
+        "catalogs": "Store catalogs"
       }
     }
   }

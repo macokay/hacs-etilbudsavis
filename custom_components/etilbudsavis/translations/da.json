@@ -2,10 +2,24 @@
   "config": {
     "step": {
       "user": {
+        "title": "eTilbudsavis – Hvad vil du følge",
+        "description": "Vælg den ene eller begge. Du kan ændre det senere.",
+        "data": {
+          "features": "Følg"
+        }
+      },
+      "search": {
         "title": "eTilbudsavis – Søgevarer",
         "description": "Indtast kommaseparerede søgetermer, fx: {example}",
         "data": {
           "search_terms": "Søgevarer (kommasepareret)"
+        }
+      },
+      "catalogs": {
+        "title": "eTilbudsavis – Aviser",
+        "description": "Indtast de butikker hvis aviser du vil følge, fx: Netto, Rema1000, Lidl",
+        "data": {
+          "catalogs": "Butikker (kommasepareret)"
         }
       },
       "options": {
@@ -16,16 +30,17 @@
           "cans_only": "Kun dåser",
           "price_per_liter": "Beregn pris pr. liter",
           "price_per_kg": "Beregn pris pr. kg",
-          "max_offers": "Maks. antal tilbud pr. vare",
-          "catalogs": "Hold øje med tilbudsaviser fra butikker (kommasepareret, tom = ingen)"
+          "max_offers": "Maks. antal tilbud pr. vare"
         }
       }
     },
     "error": {
-      "no_terms": "Angiv mindst én søgeterm."
+      "no_feature": "Vælg mindst én: søgning eller aviser.",
+      "no_terms": "Angiv mindst én søgeterm.",
+      "no_stores": "Angiv mindst én butik."
     },
     "abort": {
-      "already_configured": "eTilbudsavis er allerede konfigureret."
+      "already_configured": "eTilbudsavis er allerede sat op."
     }
   },
   "options": {
@@ -33,15 +48,26 @@
       "init": {
         "title": "eTilbudsavis – Rediger indstillinger",
         "data": {
-          "search_terms": "Søgevarer (kommasepareret)",
+          "search_terms": "Søgevarer (kommasepareret, tom = ingen)",
+          "catalogs": "Aviser fra butikker (kommasepareret, tom = ingen)",
           "stores": "Butikker (kommasepareret, tom = alle)",
           "radius": "Søgeradius i meter",
           "cans_only": "Kun dåser",
           "price_per_liter": "Beregn pris pr. liter",
           "price_per_kg": "Beregn pris pr. kg",
-          "max_offers": "Maks. antal tilbud pr. vare",
-          "catalogs": "Hold øje med tilbudsaviser fra butikker (kommasepareret, tom = ingen)"
+          "max_offers": "Maks. antal tilbud pr. vare"
         }
+      }
+    },
+    "error": {
+      "no_feature": "Angiv mindst én søgeterm eller butik."
+    }
+  },
+  "selector": {
+    "features": {
+      "options": {
+        "search": "Søgning efter varer",
+        "catalogs": "Aviser fra butikker"
       }
     }
   }
