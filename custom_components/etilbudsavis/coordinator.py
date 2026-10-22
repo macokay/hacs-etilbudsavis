@@ -18,6 +18,7 @@ from .const import (
     API_CATALOGS,
     API_LOCALE,
     CATALOG_MAX_PAGES,
+    CATALOG_TYPES,
     CONF_CANS_ONLY,
     CONF_CATALOGS,
     CONF_MAX_OFFERS,
@@ -162,13 +163,16 @@ async def fetch_catalogs(
         "limit": DEFAULT_LIMIT,
     }
     catalogs: list = []
-    for page in range(CATALOG_MAX_PAGES):
-        batch = await _get_json(
-            session, API_CATALOGS, {**params, "offset": page * DEFAULT_LIMIT}
-        )
-        catalogs += batch
-        if len(batch) < DEFAULT_LIMIT:
-            break
+    for kind in CATALOG_TYPES:
+        for page in range(CATALOG_MAX_PAGES):
+            batch = await _get_json(
+                session,
+                API_CATALOGS,
+                {**params, "types": kind, "offset": page * DEFAULT_LIMIT},
+            )
+            catalogs += batch
+            if len(batch) < DEFAULT_LIMIT:
+                break
     return catalogs
 
 
