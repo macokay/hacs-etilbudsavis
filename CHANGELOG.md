@@ -8,10 +8,13 @@
 - Store names are checked against eTilbudsavis during setup, so a store without catalogs is rejected instead of giving a silent `unknown` sensor
 - Digital (incito) catalogs are included, which covers Biltema, BAUHAUS, Bygma and XL-BYG
 - `Fakta` in the store filter now matches Coop 365, since Fakta was renamed
+- Stores added under Configure are checked against eTilbudsavis, the same as at setup
 
 ### Changed
 - Minimum Home Assistant version is now 2024.10 (selector translations in setup, and the automation example syntax)
 - Search terms are now optional in the options flow, as long as at least one store catalog is watched
+- Catalogs are fetched for all of Denmark instead of within the search radius, so border shops and other stores far from home work. The radius now only applies to item search
+- Setup with only catalogs selected finishes after the store list, since there are no search settings to ask about
 - Catalog sensors keep their last known value when an update fails, instead of turning `unknown`
 
 ## [1.1.7] - 2026-09-29

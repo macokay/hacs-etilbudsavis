@@ -26,7 +26,7 @@
         "title": "eTilbudsavis – Indstillinger",
         "data": {
           "stores": "Butikker (kommasepareret, tom = alle)",
-          "radius": "Søgeradius i meter",
+          "radius": "Søgeradius i meter (varesøgning)",
           "cans_only": "Kun dåser",
           "price_per_liter": "Beregn pris pr. liter",
           "price_per_kg": "Beregn pris pr. kg",
@@ -53,7 +53,7 @@
           "search_terms": "Søgevarer (kommasepareret, tom = ingen)",
           "catalogs": "Aviser fra butikker (kommasepareret, tom = ingen)",
           "stores": "Butikker (kommasepareret, tom = alle)",
-          "radius": "Søgeradius i meter",
+          "radius": "Søgeradius i meter (varesøgning)",
           "cans_only": "Kun dåser",
           "price_per_liter": "Beregn pris pr. liter",
           "price_per_kg": "Beregn pris pr. kg",
@@ -62,7 +62,9 @@
       }
     },
     "error": {
-      "no_feature": "Angiv mindst én søgeterm eller butik."
+      "no_feature": "Angiv mindst én søgeterm eller butik.",
+      "unknown_store": "Der blev ikke fundet aviser for en eller flere af butikkerne. Tjek stavningen.",
+      "cannot_connect": "Kunne ikke nå eTilbudsavis. Prøv igen."
     }
   },
   "selector": {

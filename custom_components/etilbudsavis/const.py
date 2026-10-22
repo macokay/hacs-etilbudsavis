@@ -12,6 +12,8 @@ DEFAULT_RADIUS = 25000
 DEFAULT_SCAN_INTERVAL = 21600  # 6 hours
 DEFAULT_LIMIT = 100  # API maximum per request
 CATALOG_MAX_PAGES = 5
+# Catalogs are fetched nationwide so stores far from home (border shops) work
+CATALOG_RADIUS = 500000
 # "paged" = printed-style catalogs, "incito" = digital catalogs (e.g. Biltema, BAUHAUS)
 CATALOG_TYPES = ["paged", "incito"]
 

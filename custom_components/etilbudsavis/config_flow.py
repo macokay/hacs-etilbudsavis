@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from .const import (
     ALL_STORES,
+    CATALOG_RADIUS,
     CONF_CANS_ONLY,
     CONF_CATALOGS,
     CONF_FEATURES,
@@ -27,9 +28,6 @@ from .const import (
 )
 from .coordinator import _normalize_store, fetch_catalogs
 
-# Store names are checked against every catalog in Denmark, not just the radius.
-CATALOG_CHECK_RADIUS = 500000
-
 FEATURE_SELECTOR = selector.SelectSelector(
     selector.SelectSelectorConfig(
         options=[FEATURE_SEARCH, FEATURE_CATALOGS],
@@ -43,6 +41,18 @@ FEATURE_SELECTOR = selector.SelectSelector(
 def _split_csv(raw: str) -> list[str]:
     """Split a comma-separated string into trimmed, non-empty items."""
     return [t.strip() for t in raw.split(",") if t.strip()]
+
+
+async def _unknown_stores(hass: HomeAssistant, stores: list[str]) -> list[str]:
+    """Return the stores that publish no catalog. Raises UpdateFailed if offline."""
+    catalogs = await fetch_catalogs(
+        async_get_clientsession(hass),
+        hass.config.latitude,
+        hass.config.longitude,
+        CATALOG_RADIUS,
+    )
+    known = {_normalize_store(c["branding"]["name"]) for c in catalogs}
+    return [s for s in stores if _normalize_store(s) not in known]
 
 
 def _title(terms: list[str], stores: list[str]) -> str:
@@ -119,15 +129,17 @@ class EtilbudsavisConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors[CONF_CATALOGS] = "no_stores"
             else:
                 try:
-                    known = await self._known_stores()
+                    unknown = await _unknown_stores(self.hass, stores)
                 except UpdateFailed:
                     errors["base"] = "cannot_connect"
                 else:
-                    if any(_normalize_store(s) not in known for s in stores):
+                    if unknown:
                         errors[CONF_CATALOGS] = "unknown_store"
                     else:
                         self._data[CONF_CATALOGS] = stores
-                        return await self.async_step_options()
+                        if FEATURE_SEARCH in self._features:
+                            return await self.async_step_options()
+                        return self._create_entry()
 
         return self.async_show_form(
             step_id="catalogs",
@@ -135,46 +147,31 @@ class EtilbudsavisConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def _known_stores(self) -> set[str]:
-        """Normalized names of every store that publishes a catalog."""
-        session = async_get_clientsession(self.hass)
-        catalogs = await fetch_catalogs(
-            session,
-            self.hass.config.latitude,
-            self.hass.config.longitude,
-            CATALOG_CHECK_RADIUS,
-        )
-        return {_normalize_store(c["branding"]["name"]) for c in catalogs}
+    def _create_entry(self):
+        """Create the entry. Missing lists mean that feature is not used."""
+        self._data.setdefault(CONF_SEARCH_TERMS, [])
+        self._data.setdefault(CONF_CATALOGS, [])
+        title = _title(self._data[CONF_SEARCH_TERMS], self._data[CONF_CATALOGS])
+        return self.async_create_entry(title=title, data=self._data)
 
     async def async_step_options(self, user_input=None):
-        """Step 3: options. Offer settings only apply when searching."""
-        errors = {}
+        """Step 3: item search settings. Only reached when search is selected."""
         if user_input is not None:
-            if CONF_STORES in user_input:
-                user_input[CONF_STORES] = _split_csv(user_input[CONF_STORES])
-            self._data.setdefault(CONF_SEARCH_TERMS, [])
-            self._data.setdefault(CONF_CATALOGS, [])
+            user_input[CONF_STORES] = _split_csv(user_input[CONF_STORES])
             self._data.update(user_input)
-            title = _title(self._data[CONF_SEARCH_TERMS], self._data[CONF_CATALOGS])
-            return self.async_create_entry(title=title, data=self._data)
+            return self._create_entry()
 
-        schema: dict = {vol.Optional(CONF_RADIUS, default=DEFAULT_RADIUS): int}
-        if FEATURE_SEARCH in self._features:
-            schema.update(
-                {
-                    vol.Optional(CONF_STORES, default=", ".join(ALL_STORES)): str,
-                    vol.Optional(CONF_CANS_ONLY, default=False): bool,
-                    vol.Optional(CONF_PRICE_PER_LITER, default=False): bool,
-                    vol.Optional(CONF_PRICE_PER_KG, default=False): bool,
-                    vol.Optional(CONF_MAX_OFFERS, default=5): int,
-                }
-            )
-
-        return self.async_show_form(
-            step_id="options",
-            data_schema=vol.Schema(schema),
-            errors=errors,
+        schema = vol.Schema(
+            {
+                vol.Optional(CONF_STORES, default=", ".join(ALL_STORES)): str,
+                vol.Optional(CONF_RADIUS, default=DEFAULT_RADIUS): int,
+                vol.Optional(CONF_CANS_ONLY, default=False): bool,
+                vol.Optional(CONF_PRICE_PER_LITER, default=False): bool,
+                vol.Optional(CONF_PRICE_PER_KG, default=False): bool,
+                vol.Optional(CONF_MAX_OFFERS, default=5): int,
+            }
         )
+        return self.async_show_form(step_id="options", data_schema=schema)
 
     @staticmethod
     @callback
@@ -198,6 +195,17 @@ class EtilbudsavisOptionsFlow(config_entries.OptionsFlow):
             if not terms and not catalogs:
                 errors["base"] = "no_feature"
             else:
+                added = [
+                    s for s in catalogs if s not in existing.get(CONF_CATALOGS, [])
+                ]
+                try:
+                    unknown = await _unknown_stores(self.hass, added) if added else []
+                except UpdateFailed:
+                    errors["base"] = "cannot_connect"
+                else:
+                    if unknown:
+                        errors[CONF_CATALOGS] = "unknown_store"
+            if not errors:
                 stores_raw = user_input.get(CONF_STORES, "")
                 stores = (
                     [s.strip() for s in stores_raw.split(",") if s.strip()]

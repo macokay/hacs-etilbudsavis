@@ -18,6 +18,7 @@ from .const import (
     API_CATALOGS,
     API_LOCALE,
     CATALOG_MAX_PAGES,
+    CATALOG_RADIUS,
     CATALOG_TYPES,
     CONF_CANS_ONLY,
     CONF_CATALOGS,
@@ -251,7 +252,7 @@ class EtilbudsavisCoordinator(DataUpdateCoordinator):
             if self.catalog_stores:
                 try:
                     raw = await fetch_catalogs(
-                        session, self._lat, self._lon, self.radius
+                        session, self._lat, self._lon, CATALOG_RADIUS
                     )
                     catalogs = _parse_catalogs(raw, self.catalog_stores)
                 except UpdateFailed as err:
