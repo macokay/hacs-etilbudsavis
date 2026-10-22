@@ -136,6 +136,42 @@ def _parse_offers(
     return results
 
 
+async def _get_json(session: aiohttp.ClientSession, url: str, params: dict) -> list:
+    """GET a JSON list from the API."""
+    try:
+        async with session.get(
+            url, params=params, timeout=aiohttp.ClientTimeout(total=15)
+        ) as resp:
+            if resp.status != 200:
+                raise UpdateFailed(f"API returned {resp.status}")
+            return await resp.json()
+    except aiohttp.ClientError as err:
+        raise UpdateFailed(f"Request failed: {err}") from err
+
+
+async def fetch_catalogs(
+    session: aiohttp.ClientSession, lat: float, lon: float, radius: int
+) -> list:
+    """Fetch current and upcoming catalogs near a location, all pages."""
+    params = {
+        "r_lat": lat,
+        "r_lng": lon,
+        "r_radius": radius,
+        "r_locale": API_LOCALE,
+        "api_av": API_AV,
+        "limit": DEFAULT_LIMIT,
+    }
+    catalogs: list = []
+    for page in range(CATALOG_MAX_PAGES):
+        batch = await _get_json(
+            session, API_CATALOGS, {**params, "offset": page * DEFAULT_LIMIT}
+        )
+        catalogs += batch
+        if len(batch) < DEFAULT_LIMIT:
+            break
+    return catalogs
+
+
 def _parse_catalogs(raw: list, stores: list) -> dict[str, list]:
     """Group catalogs by watched store, newest publication first."""
     wanted = {_normalize_store(s): s for s in stores}
@@ -210,7 +246,9 @@ class EtilbudsavisCoordinator(DataUpdateCoordinator):
             fetched = await asyncio.gather(*tasks, return_exceptions=True)
             if self.catalog_stores:
                 try:
-                    raw = await self._fetch_catalogs(session)
+                    raw = await fetch_catalogs(
+                        session, self._lat, self._lon, self.radius
+                    )
                     catalogs = _parse_catalogs(raw, self.catalog_stores)
                 except UpdateFailed as err:
                     _LOGGER.warning("Failed to fetch catalogs: %s", err)
@@ -242,38 +280,4 @@ class EtilbudsavisCoordinator(DataUpdateCoordinator):
             "offset": 0,
             "limit": DEFAULT_LIMIT,
         }
-        return await self._get(session, API_BASE, params)
-
-    async def _fetch_catalogs(self, session: aiohttp.ClientSession) -> list:
-        """Fetch current and upcoming catalogs near home."""
-        params = {
-            "r_lat": self._lat,
-            "r_lng": self._lon,
-            "r_radius": self.radius,
-            "r_locale": API_LOCALE,
-            "api_av": API_AV,
-            "limit": DEFAULT_LIMIT,
-        }
-        catalogs: list = []
-        for page in range(CATALOG_MAX_PAGES):
-            batch = await self._get(
-                session, API_CATALOGS, {**params, "offset": page * DEFAULT_LIMIT}
-            )
-            catalogs += batch
-            if len(batch) < DEFAULT_LIMIT:
-                break
-        return catalogs
-
-    async def _get(
-        self, session: aiohttp.ClientSession, url: str, params: dict
-    ) -> list:
-        """GET a JSON list from the API."""
-        try:
-            async with session.get(
-                url, params=params, timeout=aiohttp.ClientTimeout(total=15)
-            ) as resp:
-                if resp.status != 200:
-                    raise UpdateFailed(f"API returned {resp.status}")
-                return await resp.json()
-        except aiohttp.ClientError as err:
-            raise UpdateFailed(f"Request failed: {err}") from err
+        return await _get_json(session, API_BASE, params)

@@ -37,7 +37,9 @@
     "error": {
       "no_feature": "Pick at least one: search or catalogs.",
       "no_terms": "Please enter at least one search term.",
-      "no_stores": "Please enter at least one store."
+      "no_stores": "Please enter at least one store.",
+      "unknown_store": "No catalogs found for one or more of these stores. Check the spelling.",
+      "cannot_connect": "Could not reach eTilbudsavis. Try again."
     },
     "abort": {
       "already_configured": "eTilbudsavis is already configured."

@@ -37,7 +37,9 @@
     "error": {
       "no_feature": "Vælg mindst én: søgning eller aviser.",
       "no_terms": "Angiv mindst én søgeterm.",
-      "no_stores": "Angiv mindst én butik."
+      "no_stores": "Angiv mindst én butik.",
+      "unknown_store": "Der blev ikke fundet aviser for en eller flere af butikkerne. Tjek stavningen.",
+      "cannot_connect": "Kunne ikke nå eTilbudsavis. Prøv igen."
     },
     "abort": {
       "already_configured": "eTilbudsavis er allerede sat op."

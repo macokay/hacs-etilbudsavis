@@ -6,6 +6,8 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers import selector
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from .const import (
     ALL_STORES,
@@ -23,6 +25,10 @@ from .const import (
     FEATURE_CATALOGS,
     FEATURE_SEARCH,
 )
+from .coordinator import _normalize_store, fetch_catalogs
+
+# Store names are checked against every catalog in Denmark, not just the radius.
+CATALOG_CHECK_RADIUS = 500000
 
 FEATURE_SELECTOR = selector.SelectSelector(
     selector.SelectSelectorConfig(
@@ -112,8 +118,16 @@ class EtilbudsavisConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if not stores:
                 errors[CONF_CATALOGS] = "no_stores"
             else:
-                self._data[CONF_CATALOGS] = stores
-                return await self.async_step_options()
+                try:
+                    known = await self._known_stores()
+                except UpdateFailed:
+                    errors["base"] = "cannot_connect"
+                else:
+                    if any(_normalize_store(s) not in known for s in stores):
+                        errors[CONF_CATALOGS] = "unknown_store"
+                    else:
+                        self._data[CONF_CATALOGS] = stores
+                        return await self.async_step_options()
 
         return self.async_show_form(
             step_id="catalogs",
@@ -121,46 +135,44 @@ class EtilbudsavisConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
+    async def _known_stores(self) -> set[str]:
+        """Normalized names of every store that publishes a catalog."""
+        session = async_get_clientsession(self.hass)
+        catalogs = await fetch_catalogs(
+            session,
+            self.hass.config.latitude,
+            self.hass.config.longitude,
+            CATALOG_CHECK_RADIUS,
+        )
+        return {_normalize_store(c["branding"]["name"]) for c in catalogs}
+
     async def async_step_options(self, user_input=None):
-        """Step 3: options."""
+        """Step 3: options. Offer settings only apply when searching."""
         errors = {}
         if user_input is not None:
-            stores_raw = user_input.get(CONF_STORES, "")
-            stores = (
-                [s.strip() for s in stores_raw.split(",") if s.strip()]
-                if isinstance(stores_raw, str)
-                else stores_raw
-            )
+            if CONF_STORES in user_input:
+                user_input[CONF_STORES] = _split_csv(user_input[CONF_STORES])
             self._data.setdefault(CONF_SEARCH_TERMS, [])
             self._data.setdefault(CONF_CATALOGS, [])
-            self._data.update(
-                {
-                    CONF_STORES: stores,
-                    CONF_RADIUS: user_input[CONF_RADIUS],
-                    CONF_CANS_ONLY: user_input[CONF_CANS_ONLY],
-                    CONF_PRICE_PER_LITER: user_input[CONF_PRICE_PER_LITER],
-                    CONF_PRICE_PER_KG: user_input[CONF_PRICE_PER_KG],
-                    CONF_MAX_OFFERS: user_input[CONF_MAX_OFFERS],
-                }
-            )
+            self._data.update(user_input)
             title = _title(self._data[CONF_SEARCH_TERMS], self._data[CONF_CATALOGS])
             return self.async_create_entry(title=title, data=self._data)
 
-        stores_default = ", ".join(ALL_STORES)
-        schema = vol.Schema(
-            {
-                vol.Optional(CONF_STORES, default=stores_default): str,
-                vol.Optional(CONF_RADIUS, default=DEFAULT_RADIUS): int,
-                vol.Optional(CONF_CANS_ONLY, default=False): bool,
-                vol.Optional(CONF_PRICE_PER_LITER, default=False): bool,
-                vol.Optional(CONF_PRICE_PER_KG, default=False): bool,
-                vol.Optional(CONF_MAX_OFFERS, default=5): int,
-            }
-        )
+        schema: dict = {vol.Optional(CONF_RADIUS, default=DEFAULT_RADIUS): int}
+        if FEATURE_SEARCH in self._features:
+            schema.update(
+                {
+                    vol.Optional(CONF_STORES, default=", ".join(ALL_STORES)): str,
+                    vol.Optional(CONF_CANS_ONLY, default=False): bool,
+                    vol.Optional(CONF_PRICE_PER_LITER, default=False): bool,
+                    vol.Optional(CONF_PRICE_PER_KG, default=False): bool,
+                    vol.Optional(CONF_MAX_OFFERS, default=5): int,
+                }
+            )
 
         return self.async_show_form(
             step_id="options",
-            data_schema=schema,
+            data_schema=vol.Schema(schema),
             errors=errors,
         )
 
