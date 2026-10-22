@@ -37,6 +37,7 @@
 - Optional: calculate price per kg (great for food items)
 - Uses your Home Assistant home location automatically
 - Configurable search radius
+- Follow search terms, store catalogs, or both — you choose during setup
 - Watch catalogs from chosen stores — see when a new catalog is released and when it takes effect
 - All settings editable after setup via the Options flow
 
@@ -79,7 +80,7 @@
 | Field | Description |
 |---|---|
 | Search terms | Comma-separated product names (e.g. `pepsi max, faxe kondi, tuborg classic`) |
-| Stores for catalogs | Comma-separated stores (e.g. `Netto, Rema1000, Lidl`). Any store on eTilbudsavis.dk works |
+| Stores for catalogs | Comma-separated stores (e.g. `Netto, Rema1000, Lidl, Biltema`). Each name is checked against eTilbudsavis during setup. Both printed-style and digital catalogs are included |
 
 Post-setup options are available via **Configure** on the integration card:
 
@@ -91,7 +92,8 @@ Post-setup options are available via **Configure** on the integration card:
 | Price per liter | Calculate and expose price per liter where quantity data is available | Off |
 | Price per kg | Calculate and expose price per kg where weight data is available | Off |
 | Max offers per item | Maximum number of offers to return per search term | 5 |
-| Watch catalogs | Comma-separated list of stores whose catalogs you want to follow. Empty = none. Any store on eTilbudsavis.dk works, not only the supported list below. | None |
+| Search terms | Comma-separated product names. Empty = none | As entered at setup |
+| Watch catalogs | Comma-separated list of stores whose catalogs you want to follow. Empty = none. Setup checks each name against eTilbudsavis and rejects stores without catalogs (for example `Biltema` works, `Ikea` does not). | As entered at setup |
 
 **Supported stores:** Bilka, Coop 365, Fakta, Føtex, Kvickly, Lidl, Meny, Netto, Rema1000, Spar, SuperBrugsen
 
@@ -139,7 +141,7 @@ Post-setup options are available via **Configure** on the integration card:
 | `upcoming` | Catalogs that are released but not yet valid |
 | `catalogs` | All current and upcoming catalogs, newest first |
 
-Each catalog has `label`, `published`, `run_from`, `run_till`, `page_count`, `offer_count`, `pdf_url` and `image` (cover page).
+Each catalog has `label`, `published`, `run_from`, `run_till`, `page_count`, `offer_count`, `pdf_url` and `image` (cover page). Digital catalogs (for example Biltema and BAUHAUS) have no `page_count` or `pdf_url`. Some stores publish several variants at once, such as a national and a local one, and the sensor follows whichever was published last.
 
 **Example automation — notify when a new catalog is out:**
 
@@ -149,7 +151,9 @@ triggers:
     entity_id: sensor.tilbudsavis_rema1000
 conditions:
   - condition: template
-    value_template: "{{ trigger.from_state.state not in ['unknown', 'unavailable'] }}"
+    value_template: >
+      {{ trigger.from_state.state not in ['unknown', 'unavailable']
+         and trigger.to_state.state not in ['unknown', 'unavailable'] }}
 actions:
   - action: notify.notify
     data:
@@ -179,6 +183,7 @@ Data is fetched every 6 hours.
 - Price per liter and price per kg require quantity data in the offer text — not always available
 - Offers are only shown if currently active in your configured search area
 - New catalogs are picked up on the next 6-hour update, so a notification can arrive up to 6 hours after release
+- If a catalog update fails, the sensors keep their last known value until the next successful update
 
 ---
 

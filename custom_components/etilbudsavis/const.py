@@ -44,4 +44,5 @@ ALL_STORES = [
 # Store names as users type them, mapped to the API's branding name
 STORE_ALIASES = {
     "coop365": "365discount",
+    "fakta": "365discount",  # Fakta was renamed Coop 365
 }

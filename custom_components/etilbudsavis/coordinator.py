@@ -256,6 +256,10 @@ class EtilbudsavisCoordinator(DataUpdateCoordinator):
                     catalogs = _parse_catalogs(raw, self.catalog_stores)
                 except UpdateFailed as err:
                     _LOGGER.warning("Failed to fetch catalogs: %s", err)
+                    if self.data:
+                        # Keep the last known catalogs so a transient error
+                        # does not flip the sensors to unknown
+                        catalogs = self.data["catalogs"]
 
         for term, data in zip(self.search_terms, fetched):
             if isinstance(data, Exception):
