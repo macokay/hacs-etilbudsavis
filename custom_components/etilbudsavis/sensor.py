@@ -3,15 +3,17 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
-from .coordinator import EtilbudsavisCoordinator
+from .coordinator import EtilbudsavisCoordinator, parse_api_datetime
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -23,8 +25,12 @@ async def async_setup_entry(
 ) -> None:
     """Set up eTilbudsavis sensors."""
     coordinator: EtilbudsavisCoordinator = hass.data[DOMAIN][entry.entry_id]
-    entities = [
+    entities: list[SensorEntity] = [
         EtilbudsavisSensor(coordinator, term) for term in coordinator.search_terms
+    ]
+    entities += [
+        EtilbudsavisCatalogSensor(coordinator, store)
+        for store in coordinator.catalog_stores
     ]
     async_add_entities(entities)
 
@@ -44,7 +50,7 @@ class EtilbudsavisSensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self) -> int:
         """Return number of offers found."""
-        offers = (self.coordinator.data or {}).get(self._term, [])
+        offers = (self.coordinator.data or {}).get("offers", {}).get(self._term, [])
         return len(offers)
 
     @property
@@ -54,7 +60,7 @@ class EtilbudsavisSensor(CoordinatorEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict:
         """Return offers as attributes."""
-        offers = (self.coordinator.data or {}).get(self._term, [])
+        offers = (self.coordinator.data or {}).get("offers", {}).get(self._term, [])
         attrs: dict = {"search_term": self._term, "offers": offers}
 
         if offers:
@@ -71,6 +77,52 @@ class EtilbudsavisSensor(CoordinatorEntity, SensorEntity):
                 attrs["best_offer"] = best
 
         return attrs
+
+    @property
+    def available(self) -> bool:
+        return self.coordinator.last_update_success
+
+
+class EtilbudsavisCatalogSensor(CoordinatorEntity, SensorEntity):
+    """Sensor showing when a store last released a catalog."""
+
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+
+    def __init__(self, coordinator: EtilbudsavisCoordinator, store: str) -> None:
+        """Initialize."""
+        super().__init__(coordinator)
+        self._store = store
+        slug = store.lower().replace(" ", "_")
+        self._attr_unique_id = f"{coordinator.entry.entry_id}_catalog_{slug}"
+        self._attr_name = f"Tilbudsavis - {store}"
+        self._attr_icon = "mdi:newspaper-variant-outline"
+
+    @property
+    def _catalogs(self) -> list:
+        return (self.coordinator.data or {}).get("catalogs", {}).get(self._store, [])
+
+    @property
+    def native_value(self) -> datetime | None:
+        """Return when the newest catalog was published."""
+        catalogs = self._catalogs
+        return parse_api_datetime(catalogs[0]["published"]) if catalogs else None
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Return the newest catalog, upcoming catalogs and the full list."""
+        catalogs = self._catalogs
+        now = dt_util.utcnow()
+        upcoming = [
+            c
+            for c in catalogs
+            if (start := parse_api_datetime(c["run_from"])) and start > now
+        ]
+        return {
+            "store": self._store,
+            "latest": catalogs[0] if catalogs else None,
+            "upcoming": upcoming,
+            "catalogs": catalogs,
+        }
 
     @property
     def available(self) -> bool:

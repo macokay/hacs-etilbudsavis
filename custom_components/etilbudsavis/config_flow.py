@@ -9,6 +9,7 @@ from homeassistant.core import callback
 from .const import (
     ALL_STORES,
     CONF_CANS_ONLY,
+    CONF_CATALOGS,
     CONF_MAX_OFFERS,
     CONF_PRICE_PER_KG,
     CONF_PRICE_PER_LITER,
@@ -34,6 +35,11 @@ def _terms_schema(defaults: dict) -> vol.Schema:
 def _parse_terms(raw: str) -> list[str]:
     """Parse comma-separated search terms."""
     return [t.strip() for t in raw.split(",") if t.strip()]
+
+
+def _parse_list(raw: str | list) -> list[str]:
+    """Parse a comma-separated field that may already be a list."""
+    return _parse_terms(raw) if isinstance(raw, str) else raw
 
 
 class EtilbudsavisConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -82,6 +88,7 @@ class EtilbudsavisConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_PRICE_PER_LITER: user_input[CONF_PRICE_PER_LITER],
                     CONF_PRICE_PER_KG: user_input[CONF_PRICE_PER_KG],
                     CONF_MAX_OFFERS: user_input[CONF_MAX_OFFERS],
+                    CONF_CATALOGS: _parse_list(user_input.get(CONF_CATALOGS, "")),
                 }
             )
             title = ", ".join(self._data[CONF_SEARCH_TERMS][:2])
@@ -98,6 +105,7 @@ class EtilbudsavisConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional(CONF_PRICE_PER_LITER, default=False): bool,
                 vol.Optional(CONF_PRICE_PER_KG, default=False): bool,
                 vol.Optional(CONF_MAX_OFFERS, default=5): int,
+                vol.Optional(CONF_CATALOGS, default=""): str,
             }
         )
 
@@ -144,11 +152,13 @@ class EtilbudsavisOptionsFlow(config_entries.OptionsFlow):
                         CONF_PRICE_PER_LITER: user_input[CONF_PRICE_PER_LITER],
                         CONF_PRICE_PER_KG: user_input[CONF_PRICE_PER_KG],
                         CONF_MAX_OFFERS: user_input[CONF_MAX_OFFERS],
+                        CONF_CATALOGS: _parse_list(user_input.get(CONF_CATALOGS, "")),
                     },
                 )
 
         terms_default = ", ".join(existing.get(CONF_SEARCH_TERMS, []))
         stores_default = ", ".join(existing.get(CONF_STORES, ALL_STORES))
+        catalogs_default = ", ".join(existing.get(CONF_CATALOGS, []))
 
         schema = vol.Schema(
             {
@@ -170,6 +180,7 @@ class EtilbudsavisOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_MAX_OFFERS, default=existing.get(CONF_MAX_OFFERS, 5)
                 ): int,
+                vol.Optional(CONF_CATALOGS, default=catalogs_default): str,
             }
         )
 

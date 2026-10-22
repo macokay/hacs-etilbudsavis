@@ -16,7 +16,8 @@
           "cans_only": "Cans only",
           "price_per_liter": "Calculate price per liter",
           "price_per_kg": "Calculate price per kg",
-          "max_offers": "Max offers per item"
+          "max_offers": "Max offers per item",
+          "catalogs": "Watch catalogs from stores (comma-separated, empty = none)"
         }
       }
     },
@@ -38,7 +39,8 @@
           "cans_only": "Cans only",
           "price_per_liter": "Calculate price per liter",
           "price_per_kg": "Calculate price per kg",
-          "max_offers": "Max offers per item"
+          "max_offers": "Max offers per item",
+          "catalogs": "Watch catalogs from stores (comma-separated, empty = none)"
         }
       }
     }

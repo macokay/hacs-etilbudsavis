@@ -37,6 +37,7 @@
 - Optional: calculate price per kg (great for food items)
 - Uses your Home Assistant home location automatically
 - Configurable search radius
+- Watch catalogs from chosen stores — see when a new catalog is released and when it takes effect
 - All settings editable after setup via the Options flow
 
 ---
@@ -88,6 +89,7 @@ Post-setup options are available via **Configure** on the integration card:
 | Price per liter | Calculate and expose price per liter where quantity data is available | Off |
 | Price per kg | Calculate and expose price per kg where weight data is available | Off |
 | Max offers per item | Maximum number of offers to return per search term | 5 |
+| Watch catalogs | Comma-separated list of stores whose catalogs you want to follow. Empty = none. Any store on eTilbudsavis.dk works, not only the supported list below. | None |
 
 **Supported stores:** Bilka, Coop 365, Fakta, Føtex, Kvickly, Lidl, Meny, Netto, Rema1000, Spar, SuperBrugsen
 
@@ -100,6 +102,7 @@ Post-setup options are available via **Configure** on the integration card:
 | Entity | Type | Description |
 |---|---|---|
 | `sensor.tilbud_{search_term}` | `int` | Number of active offers found for the search term |
+| `sensor.tilbudsavis_{store}` | `timestamp` | When the store's newest catalog was released. Changes when a new catalog comes out, so you can trigger automations on it |
 
 ### Attributes
 
@@ -125,6 +128,35 @@ Post-setup options are available via **Configure** on the integration card:
 ]
 ```
 
+### Catalog attributes
+
+| Attribute | Description |
+|---|---|
+| `store` | The store as you entered it |
+| `latest` | The newest catalog |
+| `upcoming` | Catalogs that are released but not yet valid |
+| `catalogs` | All current and upcoming catalogs, newest first |
+
+Each catalog has `label`, `published`, `run_from`, `run_till`, `page_count`, `offer_count`, `pdf_url` and `image` (cover page).
+
+**Example automation — notify when a new catalog is out:**
+
+```yaml
+triggers:
+  - trigger: state
+    entity_id: sensor.tilbudsavis_rema1000
+conditions:
+  - condition: template
+    value_template: "{{ trigger.from_state.state not in ['unknown', 'unavailable'] }}"
+actions:
+  - action: notify.notify
+    data:
+      message: >
+        Ny avis fra {{ state_attr('sensor.tilbudsavis_rema1000', 'store') }}:
+        {{ state_attr('sensor.tilbudsavis_rema1000', 'latest').label }},
+        gælder fra {{ as_timestamp(state_attr('sensor.tilbudsavis_rema1000', 'latest').run_from) | timestamp_custom('%d/%m') }}
+```
+
 ### Update interval
 
 Data is fetched every 6 hours.
@@ -144,6 +176,7 @@ Data is fetched every 6 hours.
 - The eTilbudsavis API is unofficial and undocumented — it may change without notice
 - Price per liter and price per kg require quantity data in the offer text — not always available
 - Offers are only shown if currently active in your configured search area
+- New catalogs are picked up on the next 6-hour update, so a notification can arrive up to 6 hours after release
 
 ---
 

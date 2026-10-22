@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import aiohttp
 from homeassistant.config_entries import ConfigEntry
@@ -15,8 +15,11 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .const import (
     API_AV,
     API_BASE,
+    API_CATALOGS,
     API_LOCALE,
+    CATALOG_MAX_PAGES,
     CONF_CANS_ONLY,
+    CONF_CATALOGS,
     CONF_MAX_OFFERS,
     CONF_PRICE_PER_KG,
     CONF_PRICE_PER_LITER,
@@ -133,6 +136,43 @@ def _parse_offers(
     return results
 
 
+def _parse_catalogs(raw: list, stores: list) -> dict[str, list]:
+    """Group catalogs by watched store, newest publication first."""
+    wanted = {_normalize_store(s): s for s in stores}
+    results: dict[str, list] = {s: [] for s in stores}
+
+    for catalog in raw:
+        store_name = (catalog.get("branding") or {}).get("name", "")
+        store = wanted.get(_normalize_store(store_name))
+        if store is None:
+            continue
+        images = catalog.get("images") or {}
+        results[store].append(
+            {
+                "label": (catalog.get("label") or "").strip(),
+                "published": catalog.get("publish", ""),
+                "run_from": catalog.get("run_from", ""),
+                "run_till": catalog.get("run_till", ""),
+                "page_count": catalog.get("page_count"),
+                "offer_count": catalog.get("offer_count"),
+                "pdf_url": catalog.get("pdf_url"),
+                "image": images.get("view"),
+            }
+        )
+
+    for catalogs in results.values():
+        catalogs.sort(key=lambda c: c["published"], reverse=True)
+    return results
+
+
+def parse_api_datetime(value: str) -> datetime | None:
+    """Parse API timestamps like 2026-10-24T22:00:00+0000."""
+    try:
+        return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S%z")
+    except (TypeError, ValueError):
+        return None
+
+
 class EtilbudsavisCoordinator(DataUpdateCoordinator):
     """Coordinator to fetch all search term offers."""
 
@@ -150,6 +190,7 @@ class EtilbudsavisCoordinator(DataUpdateCoordinator):
         self.price_per_liter: bool = options.get(CONF_PRICE_PER_LITER, False)
         self.price_per_kg: bool = options.get(CONF_PRICE_PER_KG, False)
         self.max_offers: int = options.get(CONF_MAX_OFFERS, 5)
+        self.catalog_stores: list[str] = options.get(CONF_CATALOGS, [])
         self._lat = lat
         self._lon = lon
 
@@ -160,12 +201,19 @@ class EtilbudsavisCoordinator(DataUpdateCoordinator):
             update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
         )
 
-    async def _async_update_data(self) -> dict[str, list]:
-        """Fetch data for all search terms."""
+    async def _async_update_data(self) -> dict[str, dict]:
+        """Fetch offers for all search terms and catalogs for watched stores."""
         results = {}
+        catalogs: dict[str, list] = {s: [] for s in self.catalog_stores}
         async with aiohttp.ClientSession() as session:
             tasks = [self._fetch_term(session, term) for term in self.search_terms]
             fetched = await asyncio.gather(*tasks, return_exceptions=True)
+            if self.catalog_stores:
+                try:
+                    raw = await self._fetch_catalogs(session)
+                    catalogs = _parse_catalogs(raw, self.catalog_stores)
+                except UpdateFailed as err:
+                    _LOGGER.warning("Failed to fetch catalogs: %s", err)
 
         for term, data in zip(self.search_terms, fetched):
             if isinstance(data, Exception):
@@ -180,7 +228,7 @@ class EtilbudsavisCoordinator(DataUpdateCoordinator):
                     self.price_per_kg,
                     self.max_offers,
                 )
-        return results
+        return {"offers": results, "catalogs": catalogs}
 
     async def _fetch_term(self, session: aiohttp.ClientSession, term: str) -> list:
         """Fetch offers for a single search term."""
@@ -194,9 +242,35 @@ class EtilbudsavisCoordinator(DataUpdateCoordinator):
             "offset": 0,
             "limit": DEFAULT_LIMIT,
         }
+        return await self._get(session, API_BASE, params)
+
+    async def _fetch_catalogs(self, session: aiohttp.ClientSession) -> list:
+        """Fetch current and upcoming catalogs near home."""
+        params = {
+            "r_lat": self._lat,
+            "r_lng": self._lon,
+            "r_radius": self.radius,
+            "r_locale": API_LOCALE,
+            "api_av": API_AV,
+            "limit": DEFAULT_LIMIT,
+        }
+        catalogs: list = []
+        for page in range(CATALOG_MAX_PAGES):
+            batch = await self._get(
+                session, API_CATALOGS, {**params, "offset": page * DEFAULT_LIMIT}
+            )
+            catalogs += batch
+            if len(batch) < DEFAULT_LIMIT:
+                break
+        return catalogs
+
+    async def _get(
+        self, session: aiohttp.ClientSession, url: str, params: dict
+    ) -> list:
+        """GET a JSON list from the API."""
         try:
             async with session.get(
-                API_BASE, params=params, timeout=aiohttp.ClientTimeout(total=15)
+                url, params=params, timeout=aiohttp.ClientTimeout(total=15)
             ) as resp:
                 if resp.status != 200:
                     raise UpdateFailed(f"API returned {resp.status}")

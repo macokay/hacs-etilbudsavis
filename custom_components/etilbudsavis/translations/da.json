@@ -16,7 +16,8 @@
           "cans_only": "Kun dåser",
           "price_per_liter": "Beregn pris pr. liter",
           "price_per_kg": "Beregn pris pr. kg",
-          "max_offers": "Maks. antal tilbud pr. vare"
+          "max_offers": "Maks. antal tilbud pr. vare",
+          "catalogs": "Hold øje med tilbudsaviser fra butikker (kommasepareret, tom = ingen)"
         }
       }
     },
@@ -38,7 +39,8 @@
           "cans_only": "Kun dåser",
           "price_per_liter": "Beregn pris pr. liter",
           "price_per_kg": "Beregn pris pr. kg",
-          "max_offers": "Maks. antal tilbud pr. vare"
+          "max_offers": "Maks. antal tilbud pr. vare",
+          "catalogs": "Hold øje med tilbudsaviser fra butikker (kommasepareret, tom = ingen)"
         }
       }
     }

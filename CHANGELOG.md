@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- Watch catalogs from chosen stores: one timestamp sensor per store showing when its newest catalog was released, with current and upcoming catalogs (label, valid dates, page count, PDF link, cover image) as attributes
+
 ## [1.1.7] - 2026-09-29
 
 ### Fixed
