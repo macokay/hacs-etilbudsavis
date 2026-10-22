@@ -36,7 +36,9 @@
 - Optional: calculate price per liter (great for beverages)
 - Optional: calculate price per kg (great for food items)
 - Uses your Home Assistant home location automatically
-- Configurable search radius
+- Configurable search radius for item search
+- Follow search terms, store catalogs, or both — you choose during setup
+- Watch catalogs from chosen stores — see when a new catalog is released and when it takes effect
 - All settings editable after setup via the Options flow
 
 ---
@@ -45,7 +47,7 @@
 
 | Requirement | Version / Details |
 |---|---|
-| Home Assistant | 2023.1 or newer |
+| Home Assistant | 2024.10 or newer |
 | eTilbudsavis.dk | No API key required — uses unofficial public API |
 
 ---
@@ -72,22 +74,28 @@
 
 1. Go to **Settings → Devices & Services → Add Integration**.
 2. Search for **eTilbudsavis**.
-3. Enter the required fields:
+3. Choose what to follow: **Search for items**, **Store catalogs**, or both.
+4. Enter the search terms and/or the stores whose catalogs you want to follow:
 
 | Field | Description |
 |---|---|
 | Search terms | Comma-separated product names (e.g. `pepsi max, faxe kondi, tuborg classic`) |
+| Stores for catalogs | Comma-separated stores (e.g. `Netto, Rema1000, Lidl, Biltema`). Each name is checked against eTilbudsavis. Both printed-style and digital catalogs are included, and stores far from home such as border shops work too |
+
+If you only follow catalogs, setup finishes after the store list. The search settings are only asked about when search is selected.
 
 Post-setup options are available via **Configure** on the integration card:
 
 | Option | Description | Default |
 |---|---|---|
-| Stores | Comma-separated list of stores to include. Empty = all. | All stores |
-| Radius | Search radius in meters from your home location | 25000 |
+| Stores | Comma-separated list of stores to include in item search results. Empty = all. Does not affect catalogs | All stores |
+| Radius | Search radius in meters from your home location. Applies to item search only; catalogs are fetched for all of Denmark | 25000 |
 | Cans only | Only include offers where "dåse/can" appears in the offer text | Off |
 | Price per liter | Calculate and expose price per liter where quantity data is available | Off |
 | Price per kg | Calculate and expose price per kg where weight data is available | Off |
 | Max offers per item | Maximum number of offers to return per search term | 5 |
+| Search terms | Comma-separated product names. Empty = none | As entered at setup |
+| Watch catalogs | Comma-separated list of stores whose catalogs you want to follow. Empty = none. Every store you add, at setup or under Configure, is checked against eTilbudsavis and rejected if it publishes no catalogs (for example `Biltema` works, `Ikea` does not). | As entered at setup |
 
 **Supported stores:** Bilka, Coop 365, Fakta, Føtex, Kvickly, Lidl, Meny, Netto, Rema1000, Spar, SuperBrugsen
 
@@ -100,6 +108,7 @@ Post-setup options are available via **Configure** on the integration card:
 | Entity | Type | Description |
 |---|---|---|
 | `sensor.tilbud_{search_term}` | `int` | Number of active offers found for the search term |
+| `sensor.tilbudsavis_{store}` | `timestamp` | When the store's newest catalog was released. Changes when a new catalog comes out, so you can trigger automations on it |
 
 ### Attributes
 
@@ -125,6 +134,37 @@ Post-setup options are available via **Configure** on the integration card:
 ]
 ```
 
+### Catalog attributes
+
+| Attribute | Description |
+|---|---|
+| `store` | The store as you entered it |
+| `latest` | The newest catalog |
+| `upcoming` | Catalogs that are released but not yet valid |
+| `catalogs` | All current and upcoming catalogs, newest first |
+
+Each catalog has `label`, `published`, `run_from`, `run_till`, `page_count`, `offer_count`, `pdf_url` and `image` (cover page). Digital catalogs (for example Biltema and BAUHAUS) have no `page_count` or `pdf_url`. Some stores publish several variants at once, such as a national and a local one, and the sensor follows whichever was published last.
+
+**Example automation — notify when a new catalog is out:**
+
+```yaml
+triggers:
+  - trigger: state
+    entity_id: sensor.tilbudsavis_rema1000
+conditions:
+  - condition: template
+    value_template: >
+      {{ trigger.from_state.state not in ['unknown', 'unavailable']
+         and trigger.to_state.state not in ['unknown', 'unavailable'] }}
+actions:
+  - action: notify.notify
+    data:
+      message: >
+        Ny avis fra {{ state_attr('sensor.tilbudsavis_rema1000', 'store') }}:
+        {{ state_attr('sensor.tilbudsavis_rema1000', 'latest').label }},
+        gælder fra {{ as_timestamp(state_attr('sensor.tilbudsavis_rema1000', 'latest').run_from) | timestamp_custom('%d/%m') }}
+```
+
 ### Update interval
 
 Data is fetched every 6 hours.
@@ -144,6 +184,9 @@ Data is fetched every 6 hours.
 - The eTilbudsavis API is unofficial and undocumented — it may change without notice
 - Price per liter and price per kg require quantity data in the offer text — not always available
 - Offers are only shown if currently active in your configured search area
+- Catalogs are fetched for all of Denmark, so a chain with regional catalogs can have several current variants and the sensor follows whichever was published last
+- New catalogs are picked up on the next 6-hour update, so a notification can arrive up to 6 hours after release
+- If a catalog update fails, the sensors keep their last known value until the next successful update
 
 ---
 

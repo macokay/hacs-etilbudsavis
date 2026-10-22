@@ -4,11 +4,17 @@ from __future__ import annotations
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import selector
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from .const import (
     ALL_STORES,
+    CATALOG_RADIUS,
     CONF_CANS_ONLY,
+    CONF_CATALOGS,
+    CONF_FEATURES,
     CONF_MAX_OFFERS,
     CONF_PRICE_PER_KG,
     CONF_PRICE_PER_LITER,
@@ -17,23 +23,45 @@ from .const import (
     CONF_STORES,
     DEFAULT_RADIUS,
     DOMAIN,
+    FEATURE_CATALOGS,
+    FEATURE_SEARCH,
+)
+from .coordinator import _normalize_store, fetch_catalogs
+
+FEATURE_SELECTOR = selector.SelectSelector(
+    selector.SelectSelectorConfig(
+        options=[FEATURE_SEARCH, FEATURE_CATALOGS],
+        multiple=True,
+        translation_key="features",
+        mode=selector.SelectSelectorMode.LIST,
+    )
 )
 
 
-def _terms_schema(defaults: dict) -> vol.Schema:
-    return vol.Schema(
-        {
-            vol.Required(
-                CONF_SEARCH_TERMS,
-                default=defaults.get(CONF_SEARCH_TERMS, ""),
-            ): str,
-        }
-    )
-
-
-def _parse_terms(raw: str) -> list[str]:
-    """Parse comma-separated search terms."""
+def _split_csv(raw: str) -> list[str]:
+    """Split a comma-separated string into trimmed, non-empty items."""
     return [t.strip() for t in raw.split(",") if t.strip()]
+
+
+async def _unknown_stores(hass: HomeAssistant, stores: list[str]) -> list[str]:
+    """Return the stores that publish no catalog. Raises UpdateFailed if offline."""
+    catalogs = await fetch_catalogs(
+        async_get_clientsession(hass),
+        hass.config.latitude,
+        hass.config.longitude,
+        CATALOG_RADIUS,
+    )
+    known = {_normalize_store(c["branding"]["name"]) for c in catalogs}
+    return [s for s in stores if _normalize_store(s) not in known]
+
+
+def _title(terms: list[str], stores: list[str]) -> str:
+    """Build the entry title from the first two search terms or stores."""
+    items = terms or stores
+    title = ", ".join(items[:2])
+    if len(items) > 2:
+        title += f" +{len(items) - 2}"
+    return title
 
 
 class EtilbudsavisConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -43,56 +71,99 @@ class EtilbudsavisConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         self._data: dict = {}
+        self._features: list[str] = []
 
     async def async_step_user(self, user_input=None):
-        """Step 1: search terms."""
+        """Step 1: choose what to follow."""
         errors = {}
         if user_input is not None:
-            terms = _parse_terms(user_input[CONF_SEARCH_TERMS])
+            features = user_input[CONF_FEATURES]
+            if not features:
+                errors["base"] = "no_feature"
+            else:
+                self._features = features
+                if FEATURE_SEARCH in features:
+                    return await self.async_step_search()
+                return await self.async_step_catalogs()
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_FEATURES, default=[FEATURE_SEARCH]
+                    ): FEATURE_SELECTOR,
+                }
+            ),
+            errors=errors,
+        )
+
+    async def async_step_search(self, user_input=None):
+        """Step 2a: search terms."""
+        errors = {}
+        if user_input is not None:
+            terms = _split_csv(user_input[CONF_SEARCH_TERMS])
             if not terms:
                 errors[CONF_SEARCH_TERMS] = "no_terms"
             else:
                 self._data[CONF_SEARCH_TERMS] = terms
+                if FEATURE_CATALOGS in self._features:
+                    return await self.async_step_catalogs()
                 return await self.async_step_options()
 
         return self.async_show_form(
-            step_id="user",
-            data_schema=_terms_schema({}),
+            step_id="search",
+            data_schema=vol.Schema({vol.Required(CONF_SEARCH_TERMS, default=""): str}),
             description_placeholders={
                 "example": "pepsi max, faxe kondi lemonade, tuborg"
             },
             errors=errors,
         )
 
-    async def async_step_options(self, user_input=None):
-        """Step 2: options."""
+    async def async_step_catalogs(self, user_input=None):
+        """Step 2b: stores whose catalogs to follow."""
         errors = {}
         if user_input is not None:
-            stores_raw = user_input.get(CONF_STORES, "")
-            stores = (
-                [s.strip() for s in stores_raw.split(",") if s.strip()]
-                if isinstance(stores_raw, str)
-                else stores_raw
-            )
-            self._data.update(
-                {
-                    CONF_STORES: stores,
-                    CONF_RADIUS: user_input[CONF_RADIUS],
-                    CONF_CANS_ONLY: user_input[CONF_CANS_ONLY],
-                    CONF_PRICE_PER_LITER: user_input[CONF_PRICE_PER_LITER],
-                    CONF_PRICE_PER_KG: user_input[CONF_PRICE_PER_KG],
-                    CONF_MAX_OFFERS: user_input[CONF_MAX_OFFERS],
-                }
-            )
-            title = ", ".join(self._data[CONF_SEARCH_TERMS][:2])
-            if len(self._data[CONF_SEARCH_TERMS]) > 2:
-                title += f" +{len(self._data[CONF_SEARCH_TERMS]) - 2}"
-            return self.async_create_entry(title=title, data=self._data)
+            stores = _split_csv(user_input[CONF_CATALOGS])
+            if not stores:
+                errors[CONF_CATALOGS] = "no_stores"
+            else:
+                try:
+                    unknown = await _unknown_stores(self.hass, stores)
+                except UpdateFailed:
+                    errors["base"] = "cannot_connect"
+                else:
+                    if unknown:
+                        errors[CONF_CATALOGS] = "unknown_store"
+                    else:
+                        self._data[CONF_CATALOGS] = stores
+                        if FEATURE_SEARCH in self._features:
+                            return await self.async_step_options()
+                        return self._create_entry()
 
-        stores_default = ", ".join(ALL_STORES)
+        return self.async_show_form(
+            step_id="catalogs",
+            data_schema=vol.Schema({vol.Required(CONF_CATALOGS, default=""): str}),
+            errors=errors,
+        )
+
+    def _create_entry(self):
+        """Create the entry. Missing lists mean that feature is not used."""
+        self._data.setdefault(CONF_SEARCH_TERMS, [])
+        self._data.setdefault(CONF_CATALOGS, [])
+        title = _title(self._data[CONF_SEARCH_TERMS], self._data[CONF_CATALOGS])
+        return self.async_create_entry(title=title, data=self._data)
+
+    async def async_step_options(self, user_input=None):
+        """Step 3: item search settings. Only reached when search is selected."""
+        if user_input is not None:
+            user_input[CONF_STORES] = _split_csv(user_input[CONF_STORES])
+            self._data.update(user_input)
+            return self._create_entry()
+
         schema = vol.Schema(
             {
-                vol.Optional(CONF_STORES, default=stores_default): str,
+                vol.Optional(CONF_STORES, default=", ".join(ALL_STORES)): str,
                 vol.Optional(CONF_RADIUS, default=DEFAULT_RADIUS): int,
                 vol.Optional(CONF_CANS_ONLY, default=False): bool,
                 vol.Optional(CONF_PRICE_PER_LITER, default=False): bool,
@@ -100,12 +171,7 @@ class EtilbudsavisConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional(CONF_MAX_OFFERS, default=5): int,
             }
         )
-
-        return self.async_show_form(
-            step_id="options",
-            data_schema=schema,
-            errors=errors,
-        )
+        return self.async_show_form(step_id="options", data_schema=schema)
 
     @staticmethod
     @callback
@@ -124,10 +190,22 @@ class EtilbudsavisOptionsFlow(config_entries.OptionsFlow):
         existing = {**self._config_entry.data, **self._config_entry.options}
 
         if user_input is not None:
-            terms = _parse_terms(user_input[CONF_SEARCH_TERMS])
-            if not terms:
-                errors[CONF_SEARCH_TERMS] = "no_terms"
+            terms = _split_csv(user_input[CONF_SEARCH_TERMS])
+            catalogs = _split_csv(user_input[CONF_CATALOGS])
+            if not terms and not catalogs:
+                errors["base"] = "no_feature"
             else:
+                added = [
+                    s for s in catalogs if s not in existing.get(CONF_CATALOGS, [])
+                ]
+                try:
+                    unknown = await _unknown_stores(self.hass, added) if added else []
+                except UpdateFailed:
+                    errors["base"] = "cannot_connect"
+                else:
+                    if unknown:
+                        errors[CONF_CATALOGS] = "unknown_store"
+            if not errors:
                 stores_raw = user_input.get(CONF_STORES, "")
                 stores = (
                     [s.strip() for s in stores_raw.split(",") if s.strip()]
@@ -144,15 +222,18 @@ class EtilbudsavisOptionsFlow(config_entries.OptionsFlow):
                         CONF_PRICE_PER_LITER: user_input[CONF_PRICE_PER_LITER],
                         CONF_PRICE_PER_KG: user_input[CONF_PRICE_PER_KG],
                         CONF_MAX_OFFERS: user_input[CONF_MAX_OFFERS],
+                        CONF_CATALOGS: catalogs,
                     },
                 )
 
         terms_default = ", ".join(existing.get(CONF_SEARCH_TERMS, []))
         stores_default = ", ".join(existing.get(CONF_STORES, ALL_STORES))
+        catalogs_default = ", ".join(existing.get(CONF_CATALOGS, []))
 
         schema = vol.Schema(
             {
-                vol.Required(CONF_SEARCH_TERMS, default=terms_default): str,
+                vol.Optional(CONF_SEARCH_TERMS, default=terms_default): str,
+                vol.Optional(CONF_CATALOGS, default=catalogs_default): str,
                 vol.Optional(CONF_STORES, default=stores_default): str,
                 vol.Optional(
                     CONF_RADIUS, default=existing.get(CONF_RADIUS, DEFAULT_RADIUS)
