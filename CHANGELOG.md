@@ -10,6 +10,7 @@
 - `Fakta` in the store filter now matches Coop 365, since Fakta was renamed
 
 ### Changed
+- Minimum Home Assistant version is now 2024.10 (selector translations in setup, and the automation example syntax)
 - Search terms are now optional in the options flow, as long as at least one store catalog is watched
 - Catalog sensors keep their last known value when an update fails, instead of turning `unknown`
 

@@ -47,7 +47,7 @@
 
 | Requirement | Version / Details |
 |---|---|
-| Home Assistant | 2023.1 or newer |
+| Home Assistant | 2024.10 or newer |
 | eTilbudsavis.dk | No API key required — uses unofficial public API |
 
 ---
